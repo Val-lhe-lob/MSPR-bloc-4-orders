@@ -1,0 +1,6 @@
+@MSPR_bloc_4_orders_HostAddress = http://localhost:5003
+
+GET {{MSPR_bloc_4_orders_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
