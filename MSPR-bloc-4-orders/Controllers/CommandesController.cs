@@ -1,12 +1,15 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MSPR_bloc_4_orders.Data;
-using MSPR_bloc_4_orders.Models; 
+using MSPR_bloc_4_orders.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace MSPR_bloc_4_orders.Controllers
 {
-    [Route("api/[controller]")]
+    [Authorize]
     [ApiController]
+    [Route("api/[controller]")]
+
     public class CommandesController : ControllerBase
     {
         private readonly OrdersDbContext _context;
