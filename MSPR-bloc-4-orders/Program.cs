@@ -1,23 +1,20 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using MSPR_bloc_4_orders.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
-
-
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
+// Ajout des services
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<OrdersDbContext>(options =>
-options.UseSqlServer(builder.Configuration.GetConnectionString("OrdersDb")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("OrdersDb")));
 
+// Configuration JWT
 var jwt = builder.Configuration.GetSection("Jwt");
 
 builder.Services.AddAuthentication(options =>
@@ -35,10 +32,11 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = jwt["Issuer"],
         ValidAudience = jwt["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt["Key"]))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt["Key"]!))
     };
 });
 
+// Swagger + sécurité JWT
 builder.Services.AddSwaggerGen(options =>
 {
     options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
@@ -48,7 +46,7 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Description = "Entrer 'Bearer' suivi d�un espace puis de votre token JWT."
+        Description = "Entrer 'Bearer' suivi d’un espace puis de votre token JWT."
     });
 
     options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
@@ -69,7 +67,6 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -79,9 +76,10 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
-
 app.UseAuthorization();
 
-app.MapControllers();
 
+app.MapControllers();
 app.Run();
+
+public partial class Program { } 
