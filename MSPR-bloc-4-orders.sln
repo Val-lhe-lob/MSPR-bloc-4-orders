@@ -5,7 +5,7 @@ VisualStudioVersion = 17.14.36202.13
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MSPR-bloc-4-orders", "MSPR-bloc-4-orders\MSPR-bloc-4-orders.csproj", "{7C3185D4-0ACB-4AFC-941E-D8A18A78E52B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MSPR-bloc-4-orders.UnitTests", "MSPR-bloc-4-orders.UnitTests\MSPR-bloc-4-orders.UnitTests.csproj", "{E1A8079C-9D0C-4958-B1AD-9C23599FAC61}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MSPR-bloc-4-orders.UnitTests", "MSPR-bloc-4-orders.UnitTests\MSPR-bloc-4-orders.UnitTests.csproj", "{E1A8079C-9D0C-4958-B1AD-9C23599FAC61}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
