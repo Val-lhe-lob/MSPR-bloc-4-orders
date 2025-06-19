@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MSPR-bloc-4-orders", "MSPR-
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MSPR-bloc-4-orders.UnitTests", "MSPR-bloc-4-orders.UnitTests\MSPR-bloc-4-orders.UnitTests.csproj", "{E1A8079C-9D0C-4958-B1AD-9C23599FAC61}"
 EndProject
+Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{67C8D81E-53BE-4433-ACCC-D5DAA18EB2DF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{E1A8079C-9D0C-4958-B1AD-9C23599FAC61}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E1A8079C-9D0C-4958-B1AD-9C23599FAC61}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E1A8079C-9D0C-4958-B1AD-9C23599FAC61}.Release|Any CPU.Build.0 = Release|Any CPU
+		{67C8D81E-53BE-4433-ACCC-D5DAA18EB2DF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{67C8D81E-53BE-4433-ACCC-D5DAA18EB2DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{67C8D81E-53BE-4433-ACCC-D5DAA18EB2DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{67C8D81E-53BE-4433-ACCC-D5DAA18EB2DF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -16,6 +16,15 @@ builder.Services.AddDbContext<OrdersDbContext>(options =>
 
 // Configuration JWT
 var jwt = builder.Configuration.GetSection("Jwt");
+var jwtKey = jwt["Key"];
+var jwtIssuer = jwt["Issuer"];
+var jwtAudience = jwt["Audience"];
+
+if (string.IsNullOrEmpty(jwtKey) || string.IsNullOrEmpty(jwtIssuer) || string.IsNullOrEmpty(jwtAudience))
+{
+    throw new InvalidOperationException("Les paramètres JWT sont manquants dans la configuration (Key, Issuer ou Audience).");
+}
+
 
 builder.Services.AddAuthentication(options =>
 {
@@ -30,9 +39,9 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = jwt["Issuer"],
-        ValidAudience = jwt["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt["Key"]!))
+        ValidIssuer = jwtIssuer,
+        ValidAudience = jwtAudience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
     };
 });
 
@@ -82,4 +91,6 @@ app.UseAuthorization();
 app.MapControllers();
 app.Run();
 
-public partial class Program { } 
+public partial class Program { }
+
+// test pour déclencher GitHub Actions
