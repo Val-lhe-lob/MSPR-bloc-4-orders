@@ -8,6 +8,7 @@ namespace MSPR_bloc_4_orders.UnitTests
 {
     public class CustomWebApplicationFactory : WebApplicationFactory<Program>
     {
+
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.ConfigureTestServices(services =>
@@ -35,7 +36,16 @@ namespace MSPR_bloc_4_orders.UnitTests
 
                 services.AddAuthentication("Test")
                     .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, TestAuthHandler>("Test", _ => { });
+
+                // IMPORTANT : créer la base après avoir configuré InMemory
+                var sp = services.BuildServiceProvider();
+                using (var scope = sp.CreateScope())
+                {
+                    var db = scope.ServiceProvider.GetRequiredService<MSPR_bloc_4_orders.Data.OrdersDbContext>();
+                    db.Database.EnsureCreated();
+                }
             });
         }
+
     }
 }

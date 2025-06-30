@@ -11,8 +11,15 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddDbContext<OrdersDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("OrdersDb")));
+//builder.Services.AddDbContext<OrdersDbContext>(options =>
+//    options.UseSqlServer(builder.Configuration.GetConnectionString("OrdersDb")));
+
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddDbContext<OrdersDbContext>(options =>
+        options.UseSqlServer(builder.Configuration.GetConnectionString("OrdersDb")));
+}
+
 
 // Configuration JWT
 var jwt = builder.Configuration.GetSection("Jwt");
