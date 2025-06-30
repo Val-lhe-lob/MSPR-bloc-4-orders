@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using MSPR_bloc_4_orders.Data;
 
 namespace MSPR_bloc_4_orders.UnitTests
 {
@@ -13,22 +12,21 @@ namespace MSPR_bloc_4_orders.UnitTests
         {
             builder.ConfigureServices(services =>
             {
-                // Supprimer l'enregistrement existant du DbContext
+                // 1️⃣ Supprimer le DbContext configuré pour SQL Server
                 var descriptor = services.SingleOrDefault(
-                    d => d.ServiceType == typeof(DbContextOptions<OrdersDbContext>));
-
+                    d => d.ServiceType == typeof(DbContextOptions<MSPR_bloc_4_orders.Data.OrdersDbContext>));
                 if (descriptor != null)
                 {
                     services.Remove(descriptor);
                 }
 
-                // Ajouter InMemoryDatabase
-                services.AddDbContext<OrdersDbContext>(options =>
+                // 2️⃣ Ajouter InMemory DbContext
+                services.AddDbContext<MSPR_bloc_4_orders.Data.OrdersDbContext>(options =>
                 {
                     options.UseInMemoryDatabase("TestDb");
                 });
 
-                // Configurer l'auth test
+                // 3️⃣ Configurer l'authentification test
                 services.PostConfigure<Microsoft.AspNetCore.Authentication.AuthenticationOptions>(options =>
                 {
                     options.DefaultAuthenticateScheme = "Test";
@@ -36,13 +34,12 @@ namespace MSPR_bloc_4_orders.UnitTests
                 });
 
                 services.AddAuthentication("Test")
-                    .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, TestAuthHandler>(
-                        "Test", _ => { });
+                    .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, TestAuthHandler>("Test", _ => { });
 
-                // Assurer la création de la base à chaque test
+                // 4️⃣ S'assurer que la DB est créée
                 var sp = services.BuildServiceProvider();
                 using var scope = sp.CreateScope();
-                var db = scope.ServiceProvider.GetRequiredService<OrdersDbContext>();
+                var db = scope.ServiceProvider.GetRequiredService<MSPR_bloc_4_orders.Data.OrdersDbContext>();
                 db.Database.EnsureCreated();
             });
         }
