@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.AspNetCore.TestHost;
 
 namespace MSPR_bloc_4_orders.UnitTests
 {
@@ -10,9 +10,9 @@ namespace MSPR_bloc_4_orders.UnitTests
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
-            builder.ConfigureServices(services =>
+            builder.ConfigureTestServices(services =>
             {
-                // 1️⃣ Supprimer le DbContext configuré pour SQL Server
+                // Retirer le DbContext SQL Server
                 var descriptor = services.SingleOrDefault(
                     d => d.ServiceType == typeof(DbContextOptions<MSPR_bloc_4_orders.Data.OrdersDbContext>));
                 if (descriptor != null)
@@ -20,13 +20,13 @@ namespace MSPR_bloc_4_orders.UnitTests
                     services.Remove(descriptor);
                 }
 
-                // 2️⃣ Ajouter InMemory DbContext
+                // Ajouter InMemory
                 services.AddDbContext<MSPR_bloc_4_orders.Data.OrdersDbContext>(options =>
                 {
                     options.UseInMemoryDatabase("TestDb");
                 });
 
-                // 3️⃣ Configurer l'authentification test
+                // Authentification de test
                 services.PostConfigure<Microsoft.AspNetCore.Authentication.AuthenticationOptions>(options =>
                 {
                     options.DefaultAuthenticateScheme = "Test";
@@ -35,12 +35,6 @@ namespace MSPR_bloc_4_orders.UnitTests
 
                 services.AddAuthentication("Test")
                     .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, TestAuthHandler>("Test", _ => { });
-
-                // 4️⃣ S'assurer que la DB est créée
-                var sp = services.BuildServiceProvider();
-                using var scope = sp.CreateScope();
-                var db = scope.ServiceProvider.GetRequiredService<MSPR_bloc_4_orders.Data.OrdersDbContext>();
-                db.Database.EnsureCreated();
             });
         }
     }
