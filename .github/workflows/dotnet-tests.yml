@@ -2,16 +2,16 @@ name: Run .NET Tests
 
 on:
   push:
-    branches: [ main, dev ]
+    branches: [ master, develop ]
   pull_request:
-    branches: [ main, dev ]
+    branches: [ master, develop ]
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
     steps:
-    - name:  Checkout code
+    - name: Checkout code
       uses: actions/checkout@v3
 
     - name: Setup .NET 8
@@ -19,11 +19,13 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
-    - name:  Restore dependencies
-      run: dotnet restore
+    - name: Restore dependencies
+      run: dotnet restore MSPR-bloc-4-orders.sln
 
-    - name:  Build the solution
-      run: dotnet build --no-restore
+    - name: Build the solution
+      run: dotnet build MSPR-bloc-4-orders.sln --no-restore
 
     - name: Run all tests (unitaires + intégration)
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test MSPR-bloc-4-orders.UnitTests/MSPR-bloc-4-orders.UnitTests.csproj --verbosity normal
+
+

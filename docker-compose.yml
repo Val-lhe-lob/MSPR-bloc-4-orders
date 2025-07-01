@@ -1,0 +1,15 @@
+version: '3.4'
+
+services:
+  mspr-bloc-4-orders:
+    build:
+      context: .
+      dockerfile: MSPR-bloc-4-orders/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - Jwt__Key=super-secret-key
+      - Jwt__Issuer=your-issuer
+      - Jwt__Audience=your-audience
+    ports:
+      - "8080:8080"
+    volumes: []

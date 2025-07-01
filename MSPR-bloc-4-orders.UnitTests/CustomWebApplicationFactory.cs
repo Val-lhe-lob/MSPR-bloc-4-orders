@@ -1,7 +1,8 @@
 ﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.AspNetCore.TestHost;
+using Microsoft.EntityFrameworkCore;
+using MSPR_bloc_4_orders.Data;
 
 namespace MSPR_bloc_4_orders.UnitTests
 {
@@ -9,17 +10,25 @@ namespace MSPR_bloc_4_orders.UnitTests
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
-            builder.ConfigureTestServices(services =>
+            builder.UseEnvironment("Testing");
+
+            builder.ConfigureServices(services =>
             {
-                // On supprime les middlewares d'authentification pour les tests
-                services.PostConfigure<Microsoft.AspNetCore.Authentication.AuthenticationOptions>(options =>
+                // Supprimer le DbContext SQL Server
+                var descriptor = services.SingleOrDefault(
+                    d => d.ServiceType == typeof(DbContextOptions<OrdersDbContext>));
+                if (descriptor != null)
                 {
-                    options.DefaultAuthenticateScheme = "Test";
-                    options.DefaultChallengeScheme = "Test";
+                    services.Remove(descriptor);
+                }
+
+                // Ajouter InMemory
+                services.AddDbContext<OrdersDbContext>(options =>
+                {
+                    options.UseInMemoryDatabase("TestDb");
                 });
 
-                services.AddAuthentication("Test")
-                    .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, TestAuthHandler>("Test", _ => { });
+                
             });
         }
     }
