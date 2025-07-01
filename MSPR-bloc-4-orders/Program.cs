@@ -11,75 +11,49 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-//builder.Services.AddDbContext<OrdersDbContext>(options =>
-//    options.UseSqlServer(builder.Configuration.GetConnectionString("OrdersDb")));
-
+// DbContext SQL Server seulement si ce n'est pas Testing
 if (!builder.Environment.IsEnvironment("Testing"))
 {
     builder.Services.AddDbContext<OrdersDbContext>(options =>
         options.UseSqlServer(builder.Configuration.GetConnectionString("OrdersDb")));
-}
 
+    // Authentification JWT seulement si ce n'est pas Testing
+    var jwt = builder.Configuration.GetSection("Jwt");
+    var jwtKey = jwt["Key"];
+    var jwtIssuer = jwt["Issuer"];
+    var jwtAudience = jwt["Audience"];
 
-// Configuration JWT
-var jwt = builder.Configuration.GetSection("Jwt");
-var jwtKey = jwt["Key"];
-var jwtIssuer = jwt["Issuer"];
-var jwtAudience = jwt["Audience"];
-
-if (string.IsNullOrEmpty(jwtKey) || string.IsNullOrEmpty(jwtIssuer) || string.IsNullOrEmpty(jwtAudience))
-{
-    throw new InvalidOperationException("Les paramètres JWT sont manquants dans la configuration (Key, Issuer ou Audience).");
-}
-
-
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
+    if (string.IsNullOrEmpty(jwtKey) || string.IsNullOrEmpty(jwtIssuer) || string.IsNullOrEmpty(jwtAudience))
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtIssuer,
-        ValidAudience = jwtAudience,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
-    };
-});
+        throw new InvalidOperationException("Les paramètres JWT sont manquants.");
+    }
 
-// Swagger + sécurité JWT
-builder.Services.AddSwaggerGen(options =>
-{
-    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    builder.Services.AddAuthentication(options =>
     {
-        Name = "Authorization",
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
-        Scheme = "Bearer",
-        BearerFormat = "JWT",
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Description = "Entrer 'Bearer' suivi d’un espace puis de votre token JWT."
-    });
-
-    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
     {
+        options.TokenValidationParameters = new TokenValidationParameters
         {
-            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-            {
-                Reference = new Microsoft.OpenApi.Models.OpenApiReference
-                {
-                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        };
     });
-});
+}
+else
+{
+    // Environnement Testing: ajoute un schéma d'authentification bidon
+    builder.Services.AddAuthentication("Test")
+        .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, TestAuthHandler>(
+            "Test", options => { });
+}
 
 var app = builder.Build();
 
@@ -94,10 +68,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
-
 app.MapControllers();
 app.Run();
 
 public partial class Program { }
-
-
