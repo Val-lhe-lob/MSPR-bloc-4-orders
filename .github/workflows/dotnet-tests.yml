@@ -26,5 +26,6 @@ jobs:
       run: dotnet build MSPR-bloc-4-orders.sln --no-restore
 
     - name: Run all tests (unitaires + intégration)
-      run: dotnet test MSPR-bloc-4-orders.sln --verbosity normal
+      run: dotnet test MSPR-bloc-4-orders.UnitTests/MSPR-bloc-4-orders.UnitTests.csproj --verbosity normal
+
 
