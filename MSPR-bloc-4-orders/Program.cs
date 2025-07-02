@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using MSPR_bloc_4_orders.Data;
+using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -40,7 +42,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Authentification JWT uniquement hors testing
+// Authentification
 if (!isTesting)
 {
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -58,6 +60,12 @@ if (!isTesting)
         };
     });
 }
+else
+{
+    // Ajoute un schéma d'auth "Test" sans implémentation réelle pour satisfaire UseAuthorization()
+    builder.Services.AddAuthentication("Test")
+        .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", options => { });
+}
 
 builder.Services.AddControllers();
 
@@ -71,14 +79,34 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Auth seulement si configuré
-if (!isTesting)
-{
-    app.UseAuthentication();
-    app.UseAuthorization();
-}
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 app.Run();
 
 public partial class Program { }
+
+// Handler d'authentification minimaliste pour injecter un utilisateur pendant les tests
+public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
+{
+    public TestAuthHandler(IOptionsMonitor<AuthenticationSchemeOptions> options,
+                           ILoggerFactory logger,
+                           UrlEncoder encoder,
+                           ISystemClock clock)
+        : base(options, logger, encoder, clock) { }
+
+    protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+    {
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.Name, "TestUser"),
+            new Claim(ClaimTypes.Role, "admin")
+        };
+        var identity = new ClaimsIdentity(claims, "Test");
+        var principal = new ClaimsPrincipal(identity);
+        var ticket = new AuthenticationTicket(principal, "Test");
+
+        return Task.FromResult(AuthenticateResult.Success(ticket));
+    }
+}
