@@ -41,7 +41,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Authentification JWT uniquement hors testing
+// Authentification JWT hors tests
 if (!isTesting)
 {
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -59,6 +59,11 @@ if (!isTesting)
         };
     });
 }
+else
+{
+    // ✅ Déclare un schéma "Test" comme par défaut sans handler (autorise UseAuthorization sans erreur)
+    builder.Services.AddAuthentication("Test");
+}
 
 builder.Services.AddControllers();
 
@@ -72,15 +77,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-if (!isTesting)
+app.UseAuthentication(); // Safe même en test car un schéma est défini
+app.UseAuthorization();
+
+if (isTesting)
 {
-    // Utilisé en PROD et DEV uniquement
-    app.UseAuthentication();
-    app.UseAuthorization();
-}
-else
-{
-    // Mock user en Testing sans Auth ni handler inutile
+    // Injecte un utilisateur factice pendant les tests
     app.Use(async (context, next) =>
     {
         var identity = new ClaimsIdentity(new[]
