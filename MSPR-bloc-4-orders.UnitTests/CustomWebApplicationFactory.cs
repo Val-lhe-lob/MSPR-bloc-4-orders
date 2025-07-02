@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using MSPR_bloc_4_orders.Data;
+using Microsoft.AspNetCore.Authentication;
+using System.Linq;
 
 namespace MSPR_bloc_4_orders.UnitTests
 {
@@ -14,7 +16,7 @@ namespace MSPR_bloc_4_orders.UnitTests
 
             builder.ConfigureServices(services =>
             {
-                // Supprimer le DbContext SQL Server
+                // Retirer le DbContext SQL Server
                 var descriptor = services.SingleOrDefault(
                     d => d.ServiceType == typeof(DbContextOptions<OrdersDbContext>));
                 if (descriptor != null)
@@ -22,13 +24,15 @@ namespace MSPR_bloc_4_orders.UnitTests
                     services.Remove(descriptor);
                 }
 
-                // Ajouter InMemory
+                // Ajouter DbContext InMemory
                 services.AddDbContext<OrdersDbContext>(options =>
                 {
                     options.UseInMemoryDatabase("TestDb");
                 });
 
-                
+                // Mock Authentication pour tests d'intégration
+                services.AddAuthentication("Test")
+                        .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", options => { });
             });
         }
     }
