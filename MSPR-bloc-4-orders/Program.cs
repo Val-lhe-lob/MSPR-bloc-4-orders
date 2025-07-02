@@ -1,38 +1,50 @@
-﻿using Microsoft.EntityFrameworkCore;
-using MSPR_bloc_4_orders.Data;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using MSPR_bloc_4_orders.Data;
+using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+bool isTesting = builder.Environment.IsEnvironment("Testing");
 
-// Ajout des services
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-// DbContext SQL Server seulement si ce n'est pas Testing
-if (!builder.Environment.IsEnvironment("Testing"))
+// DbContext conditionnel
+builder.Services.AddDbContext<OrdersDbContext>(options =>
 {
-    builder.Services.AddDbContext<OrdersDbContext>(options =>
-        options.UseSqlServer(builder.Configuration.GetConnectionString("OrdersDb")));
+    if (!isTesting)
+        options.UseSqlServer(builder.Configuration.GetConnectionString("OrdersDb"));
+});
 
-    // Authentification JWT seulement si ce n'est pas Testing
-    var jwt = builder.Configuration.GetSection("Jwt");
-    var jwtKey = jwt["Key"];
-    var jwtIssuer = jwt["Issuer"];
-    var jwtAudience = jwt["Audience"];
-
-    if (string.IsNullOrEmpty(jwtKey) || string.IsNullOrEmpty(jwtIssuer) || string.IsNullOrEmpty(jwtAudience))
+// Swagger avec JWT pour documentation
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Orders API", Version = "v1" });
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        throw new InvalidOperationException("Les paramètres JWT sont manquants.");
-    }
-
-    builder.Services.AddAuthentication(options =>
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Ex: Bearer eyJhbGciOiJIUzI1NiIs..."
+    });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
-        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    })
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+            },
+            new string[] { }
+        }
+    });
+});
+
+// Authentification JWT hors tests
+if (!isTesting)
+{
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
@@ -41,19 +53,19 @@ if (!builder.Environment.IsEnvironment("Testing"))
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtIssuer,
-            ValidAudience = jwtAudience,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
         };
     });
 }
 else
 {
-    // Environnement Testing: ajoute un schéma d'authentification bidon
-    builder.Services.AddAuthentication("Test")
-        .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, TestAuthHandler>(
-            "Test", options => { });
+    // ✅ Déclare un schéma "Test" comme par défaut sans handler (autorise UseAuthorization sans erreur)
+    builder.Services.AddAuthentication("Test");
 }
+
+builder.Services.AddControllers();
 
 var app = builder.Build();
 
@@ -65,8 +77,24 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthentication();
+app.UseAuthentication(); // Safe même en test car un schéma est défini
 app.UseAuthorization();
+
+if (isTesting)
+{
+    // Injecte un utilisateur factice pendant les tests
+    app.Use(async (context, next) =>
+    {
+        var identity = new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.Name, "TestUser"),
+            new Claim(ClaimTypes.Role, "admin")
+        }, "TestAuth");
+
+        context.User = new ClaimsPrincipal(identity);
+        await next();
+    });
+}
 
 app.MapControllers();
 app.Run();
