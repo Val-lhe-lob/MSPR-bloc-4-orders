@@ -6,18 +6,16 @@ using MSPR_bloc_4_orders.Data;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Détection du mode testing
 bool isTesting = builder.Environment.IsEnvironment("Testing");
 
-// DbContext conditionnel pour éviter le double enregistrement SQLServer + InMemory
+// DbContext conditionnel
 builder.Services.AddDbContext<OrdersDbContext>(options =>
 {
     if (!isTesting)
         options.UseSqlServer(builder.Configuration.GetConnectionString("OrdersDb"));
 });
 
-// Swagger avec JWT
+// Swagger avec JWT pour documentation
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Orders API", Version = "v1" });
@@ -42,21 +40,24 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Authentification JWT via variables d'environnement
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-.AddJwtBearer(options =>
+// Authentification JWT uniquement hors testing
+if (!isTesting)
 {
-    options.TokenValidationParameters = new TokenValidationParameters
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
-    };
-});
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        };
+    });
+}
 
 builder.Services.AddControllers();
 
@@ -69,8 +70,13 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseAuthentication();
-app.UseAuthorization();
+
+// Auth seulement si configuré
+if (!isTesting)
+{
+    app.UseAuthentication();
+    app.UseAuthorization();
+}
 
 app.MapControllers();
 app.Run();
