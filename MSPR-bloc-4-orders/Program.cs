@@ -1,59 +1,58 @@
-﻿using Microsoft.EntityFrameworkCore;
-using MSPR_bloc_4_orders.Data;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using MSPR_bloc_4_orders.Data;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Ajout des services
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+// DbContext
+builder.Services.AddDbContext<OrdersDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("OrdersDb")));
 
-// DbContext SQL Server seulement si ce n'est pas Testing
-if (!builder.Environment.IsEnvironment("Testing"))
+// Swagger avec JWT pour documentation + tests
+builder.Services.AddSwaggerGen(c =>
 {
-    builder.Services.AddDbContext<OrdersDbContext>(options =>
-        options.UseSqlServer(builder.Configuration.GetConnectionString("OrdersDb")));
-
-    // Authentification JWT seulement si ce n'est pas Testing
-    var jwt = builder.Configuration.GetSection("Jwt");
-    var jwtKey = jwt["Key"];
-    var jwtIssuer = jwt["Issuer"];
-    var jwtAudience = jwt["Audience"];
-
-    if (string.IsNullOrEmpty(jwtKey) || string.IsNullOrEmpty(jwtIssuer) || string.IsNullOrEmpty(jwtAudience))
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Orders API", Version = "v1" });
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        throw new InvalidOperationException("Les paramètres JWT sont manquants.");
-    }
-
-    builder.Services.AddAuthentication(options =>
-    {
-        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    })
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtIssuer,
-            ValidAudience = jwtAudience,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
-        };
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Ex: Bearer eyJhbGciOiJIUzI1NiIs..."
     });
-}
-else
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+            },
+            new string[] { }
+        }
+    });
+});
+
+// Authentification JWT via variables d'environnement (Docker Compose)
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+.AddJwtBearer(options =>
 {
-    // Environnement Testing: ajoute un schéma d'authentification bidon
-    builder.Services.AddAuthentication("Test")
-        .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, TestAuthHandler>(
-            "Test", options => { });
-}
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+    };
+});
+
+builder.Services.AddControllers();
 
 var app = builder.Build();
 
@@ -64,7 +63,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
 
