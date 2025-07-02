@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -42,7 +41,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Authentification
+// Authentification JWT uniquement hors testing
 if (!isTesting)
 {
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -60,12 +59,6 @@ if (!isTesting)
         };
     });
 }
-else
-{
-    // Ajoute un schéma d'auth "Test" sans implémentation réelle pour satisfaire UseAuthorization()
-    builder.Services.AddAuthentication("Test")
-        .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", options => { });
-}
 
 builder.Services.AddControllers();
 
@@ -79,34 +72,29 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthentication();
-app.UseAuthorization();
+if (!isTesting)
+{
+    // Utilisé en PROD et DEV uniquement
+    app.UseAuthentication();
+    app.UseAuthorization();
+}
+else
+{
+    // Mock user en Testing sans Auth ni handler inutile
+    app.Use(async (context, next) =>
+    {
+        var identity = new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.Name, "TestUser"),
+            new Claim(ClaimTypes.Role, "admin")
+        }, "TestAuth");
+
+        context.User = new ClaimsPrincipal(identity);
+        await next();
+    });
+}
 
 app.MapControllers();
 app.Run();
 
 public partial class Program { }
-
-// Handler d'authentification minimaliste pour injecter un utilisateur pendant les tests
-public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
-{
-    public TestAuthHandler(IOptionsMonitor<AuthenticationSchemeOptions> options,
-                           ILoggerFactory logger,
-                           UrlEncoder encoder,
-                           ISystemClock clock)
-        : base(options, logger, encoder, clock) { }
-
-    protected override Task<AuthenticateResult> HandleAuthenticateAsync()
-    {
-        var claims = new[]
-        {
-            new Claim(ClaimTypes.Name, "TestUser"),
-            new Claim(ClaimTypes.Role, "admin")
-        };
-        var identity = new ClaimsIdentity(claims, "Test");
-        var principal = new ClaimsPrincipal(identity);
-        var ticket = new AuthenticationTicket(principal, "Test");
-
-        return Task.FromResult(AuthenticateResult.Success(ticket));
-    }
-}
