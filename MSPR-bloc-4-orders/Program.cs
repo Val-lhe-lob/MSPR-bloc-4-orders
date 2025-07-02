@@ -7,11 +7,17 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// DbContext
-builder.Services.AddDbContext<OrdersDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("OrdersDb")));
+// Détection du mode testing
+bool isTesting = builder.Environment.IsEnvironment("Testing");
 
-// Swagger avec JWT pour documentation + tests
+// DbContext conditionnel pour éviter le double enregistrement SQLServer + InMemory
+builder.Services.AddDbContext<OrdersDbContext>(options =>
+{
+    if (!isTesting)
+        options.UseSqlServer(builder.Configuration.GetConnectionString("OrdersDb"));
+});
+
+// Swagger avec JWT
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Orders API", Version = "v1" });
@@ -36,7 +42,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Authentification JWT via variables d'environnement (Docker Compose)
+// Authentification JWT via variables d'environnement
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 .AddJwtBearer(options =>
 {
