@@ -7,6 +7,7 @@ using MSPR_bloc_4_orders.Controllers;
 using MSPR_bloc_4_orders.Models;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
+using MSPR_bloc_4_orders.Services;
 
 namespace MSPR_bloc_4_orders.UnitTests
 {
@@ -32,7 +33,8 @@ namespace MSPR_bloc_4_orders.UnitTests
 
         private CommandesController GetControllerWithAuth(OrdersDbContext context)
         {
-            var controller = new CommandesController(context);
+            IRabbitMqPublisher fakePublisher = new FakeRabbitMqPublisher(); // ✅ utilise l'interface
+            var controller = new CommandesController(context, fakePublisher);
             controller.ControllerContext = new ControllerContext
             {
                 HttpContext = new DefaultHttpContext
@@ -66,13 +68,9 @@ namespace MSPR_bloc_4_orders.UnitTests
 
             var result = await controller.GetCommande(1);
 
-            // Vérifie que la valeur n'est pas nulle
             result.Value.Should().NotBeNull();
-
-            // Vérifie que c'est bien la commande attendue
             result.Value.IdCommande.Should().Be(1);
         }
-
 
         [Fact]
         public async Task PostCommande_AddsCommande()
@@ -103,7 +101,6 @@ namespace MSPR_bloc_4_orders.UnitTests
             var context = GetDbContext();
             var controller = GetControllerWithAuth(context);
 
-            // Détacher l'entité existante pour éviter le suivi multiple
             var existingCommande = await context.Commandes.FindAsync(1);
             context.Entry(existingCommande!).State = EntityState.Detached;
 
