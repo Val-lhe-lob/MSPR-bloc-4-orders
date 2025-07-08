@@ -81,6 +81,15 @@ namespace MSPR_bloc_4_orders.Controllers
 
             try
             {
+                var existingEntity = await _context.ProduitCommandes.FindAsync(id);
+                if (existingEntity == null)
+                {
+                    return NotFound();
+                }
+
+                // Detach the existing tracked entity to avoid tracking conflict
+                _context.Entry(existingEntity).State = EntityState.Detached;
+
                 _context.Update(produitCommande);
                 await _context.SaveChangesAsync();
             }
