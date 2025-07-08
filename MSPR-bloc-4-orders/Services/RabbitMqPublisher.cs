@@ -17,7 +17,7 @@ namespace MSPR_bloc_4_orders.Services
             {
                 UserName = "guest",
                 Password = "guest",
-                Endpoints = { new System.Net.IPEndPoint(System.Net.IPAddress.Loopback, 5552) }
+                Endpoints = { new System.Net.IPEndPoint(System.Net.Dns.GetHostAddresses("rabbitmq")[0], 5552) }
             };
 
             var system = StreamSystem.Create(config).GetAwaiter().GetResult();
