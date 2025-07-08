@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using MSPR_bloc_4_orders.Data;
+using MSPR_bloc_4_orders.Services;
 using Microsoft.AspNetCore.Authentication;
-using System.Linq;
 
 namespace MSPR_bloc_4_orders.UnitTests
 {
@@ -16,23 +16,29 @@ namespace MSPR_bloc_4_orders.UnitTests
 
             builder.ConfigureServices(services =>
             {
-                // Retirer le DbContext SQL Server
+                // Supprime OrdersDbContext SqlServer
                 var descriptor = services.SingleOrDefault(
                     d => d.ServiceType == typeof(DbContextOptions<OrdersDbContext>));
                 if (descriptor != null)
-                {
                     services.Remove(descriptor);
-                }
 
-                // Ajouter DbContext InMemory
                 services.AddDbContext<OrdersDbContext>(options =>
                 {
-                    options.UseInMemoryDatabase("TestDb");
+                    options.UseInMemoryDatabase("InMemoryOrdersTestDb");
                 });
 
-                // Mock Authentication pour tests d'intégration
+                // Mock RabbitMQ
+                services.AddScoped<IRabbitMqPublisher, FakeRabbitMqPublisher>();
+
+                // Remplace l'authentification par un schéma de test
                 services.AddAuthentication("Test")
                         .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", options => { });
+
+                // Initialise la DB
+                var sp = services.BuildServiceProvider();
+                using var scope = sp.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<OrdersDbContext>();
+                db.Database.EnsureCreated();
             });
         }
     }
