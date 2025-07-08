@@ -3,8 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using MSPR_bloc_4_orders.Data;
 using MSPR_bloc_4_orders.Models;
 using Microsoft.AspNetCore.Authorization;
-using MSPR_bloc_4_orders.Services;
-using MSPR_bloc_4_orders.Events;
 
 namespace MSPR_bloc_4_orders.Controllers
 {
@@ -14,12 +12,10 @@ namespace MSPR_bloc_4_orders.Controllers
     public class CommandesController : ControllerBase
     {
         private readonly OrdersDbContext _context;
-        private readonly IRabbitMqPublisher _rabbitMqPublisher;
 
-        public CommandesController(OrdersDbContext context, IRabbitMqPublisher rabbitMqPublisher)
+        public CommandesController(OrdersDbContext context)
         {
             _context = context;
-            _rabbitMqPublisher = rabbitMqPublisher;
         }
 
         // GET: api/commandes
@@ -34,7 +30,6 @@ namespace MSPR_bloc_4_orders.Controllers
         public async Task<ActionResult<Commande>> GetCommande(int id)
         {
             var commande = await _context.Commandes.FindAsync(id);
-
             if (commande == null)
                 return NotFound();
 
@@ -49,23 +44,6 @@ namespace MSPR_bloc_4_orders.Controllers
             _context.Commandes.Add(commande);
             await _context.SaveChangesAsync();
 
-            // Récupération des produits liés à la commande
-            var produitsCommande = await _context.ProduitCommandes
-                .Where(pc => pc.IdCommande == commande.IdCommande)
-                .ToListAsync();
-
-            var orderEvent = new OrderCreatedEvent
-            {
-                OrderId = commande.IdCommande,
-                Products = produitsCommande.Select(p => new ProductOrderItem
-                {
-                    ProductId = p.IdProduit,
-                    Quantity = p.Quantite ?? 0
-                }).ToList()
-            };
-
-            await _rabbitMqPublisher.PublishOrderCreated(orderEvent);
-
             return CreatedAtAction(nameof(GetCommande), new { id = commande.IdCommande }, commande);
         }
 
@@ -77,14 +55,13 @@ namespace MSPR_bloc_4_orders.Controllers
                 return BadRequest();
 
             _context.Entry(commande).State = EntityState.Modified;
-
             try
             {
                 await _context.SaveChangesAsync();
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!CommandeExists(id))
+                if (!_context.Commandes.Any(e => e.IdCommande == id))
                     return NotFound();
                 else
                     throw;
@@ -105,11 +82,6 @@ namespace MSPR_bloc_4_orders.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
-        }
-
-        private bool CommandeExists(int id)
-        {
-            return _context.Commandes.Any(e => e.IdCommande == id);
         }
     }
 }
