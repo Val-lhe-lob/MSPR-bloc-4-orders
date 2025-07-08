@@ -13,7 +13,6 @@ namespace MSPR_bloc_4_orders.Controllers
     public class CommandesController : ControllerBase
     {
         private readonly OrdersDbContext _context;
-        private readonly IRabbitMqPublisher _rabbitMqPublisher;
 
         public CommandesController(OrdersDbContext context)
         {

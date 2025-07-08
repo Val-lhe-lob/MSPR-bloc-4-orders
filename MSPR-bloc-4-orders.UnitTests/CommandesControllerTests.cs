@@ -33,8 +33,8 @@ namespace MSPR_bloc_4_orders.UnitTests
 
         private CommandesController GetControllerWithAuth(OrdersDbContext context)
         {
-            IRabbitMqPublisher fakePublisher = new FakeRabbitMqPublisher(); // ✅ utilise l'interface
-            var controller = new CommandesController(context, fakePublisher);
+            IRabbitMqPublisher fakePublisher = new FakeRabbitMqPublisher();
+            var controller = new CommandesController(context);
             controller.ControllerContext = new ControllerContext
             {
                 HttpContext = new DefaultHttpContext
