@@ -132,5 +132,132 @@ namespace MSPR_bloc_4_orders.UnitTests
             var deleted = await context.Commandes.FindAsync(1);
             deleted.Should().BeNull();
         }
+
+        [Fact]
+        public async Task GetProduitCommandes_ReturnsAll()
+        {
+            var context = GetDbContext();
+            context.ProduitCommandes.Add(new ProduitCommande
+            {
+                IdProduitcommande = 1,
+                IdCommande = 1,
+                IdProduit = 100,
+                Nom = "Produit Test",
+                Quantite = 5,
+                CreatedAt = DateTime.Now
+            });
+            context.SaveChanges();
+
+            var controller = new ProduitCommandesController(context, new FakeRabbitMqPublisher());
+
+            var result = await controller.GetProduitCommandes();
+
+            result.Value.Should().NotBeNull().And.HaveCount(1);
+        }
+
+        [Fact]
+        public async Task GetProduitCommande_ById_ReturnsEntity()
+        {
+            var context = GetDbContext();
+            context.ProduitCommandes.Add(new ProduitCommande
+            {
+                IdProduitcommande = 2,
+                IdCommande = 1,
+                IdProduit = 101,
+                Nom = "Produit X",
+                Quantite = 3,
+                CreatedAt = DateTime.Now
+            });
+            context.SaveChanges();
+
+            var controller = new ProduitCommandesController(context, new FakeRabbitMqPublisher());
+
+            var result = await controller.GetProduitCommande(2);
+
+            result.Value.Should().NotBeNull();
+            result.Value.IdProduitcommande.Should().Be(2);
+        }
+
+        [Fact]
+        public async Task PostProduitCommandes_AddsEntities()
+        {
+            var context = GetDbContext();
+            var controller = new ProduitCommandesController(context, new FakeRabbitMqPublisher());
+
+            var produits = new List<ProduitCommande>
+    {
+        new ProduitCommande { IdProduitcommande = 3, IdCommande = 1, IdProduit = 102, Quantite = 2, CreatedAt = DateTime.Now },
+        new ProduitCommande { IdProduitcommande = 4, IdCommande = 1, IdProduit = 103, Quantite = 4, CreatedAt = DateTime.Now }
+    };
+
+            var result = await controller.PostProduitCommandes(produits);
+
+            var okResult = result.Result as OkObjectResult;
+            okResult.Should().NotBeNull();
+            var returnedList = okResult.Value as List<ProduitCommande>;
+            returnedList.Should().NotBeNull().And.HaveCount(2);
+        }
+
+        [Fact]
+        public async Task PutProduitCommande_UpdatesEntity()
+        {
+            var context = GetDbContext();
+            context.ProduitCommandes.Add(new ProduitCommande
+            {
+                IdProduitcommande = 5,
+                IdCommande = 1,
+                IdProduit = 104,
+                Nom = "Produit Update",
+                Quantite = 1,
+                CreatedAt = DateTime.Now
+            });
+            context.SaveChanges();
+
+            var controller = new ProduitCommandesController(context, new FakeRabbitMqPublisher());
+
+            var updatedProduit = new ProduitCommande
+            {
+                IdProduitcommande = 5,
+                IdCommande = 1,
+                IdProduit = 104,
+                Nom = "Produit Updated",
+                Quantite = 10,
+                CreatedAt = DateTime.Now
+            };
+
+            var result = await controller.PutProduitCommande(5, updatedProduit);
+
+            result.Should().BeOfType<NoContentResult>();
+
+            var entity = await context.ProduitCommandes.FindAsync(5);
+            entity.Quantite.Should().Be(10);
+            entity.Nom.Should().Be("Produit Updated");
+        }
+
+        [Fact]
+        public async Task DeleteProduitCommande_RemovesEntity()
+        {
+            var context = GetDbContext();
+            context.ProduitCommandes.Add(new ProduitCommande
+            {
+                IdProduitcommande = 6,
+                IdCommande = 1,
+                IdProduit = 105,
+                Nom = "Produit Delete",
+                Quantite = 1,
+                CreatedAt = DateTime.Now
+            });
+            context.SaveChanges();
+
+            var controller = new ProduitCommandesController(context, new FakeRabbitMqPublisher());
+
+            var result = await controller.DeleteProduitCommande(6);
+
+            result.Should().BeOfType<NoContentResult>();
+
+            var entity = await context.ProduitCommandes.FindAsync(6);
+            entity.Should().BeNull();
+        }
+
     }
 }
