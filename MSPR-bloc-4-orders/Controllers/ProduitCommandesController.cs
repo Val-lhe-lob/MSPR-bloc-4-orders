@@ -71,29 +71,34 @@ namespace MSPR_bloc_4_orders.Controllers
             return Ok(produitsCommande);
         }
 
-        // PUT: api/produitcommandes/5
         [HttpPut("{id}")]
         public async Task<IActionResult> PutProduitCommande(int id, ProduitCommande produitCommande)
         {
             if (id != produitCommande.IdProduitcommande)
-                return BadRequest("L'ID fourni ne correspond pas à l'entité.");
-
-            _context.Entry(produitCommande).State = EntityState.Modified;
+            {
+                return BadRequest();
+            }
 
             try
             {
+                _context.Update(produitCommande);
                 await _context.SaveChangesAsync();
             }
             catch (DbUpdateConcurrencyException)
             {
                 if (!ProduitCommandeExists(id))
+                {
                     return NotFound();
+                }
                 else
+                {
                     throw;
+                }
             }
 
             return NoContent();
         }
+
 
         // DELETE: api/produitcommandes/5
         [HttpDelete("{id}")]
