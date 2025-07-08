@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MSPR_bloc_4_orders.Data;
 using MSPR_bloc_4_orders.Models;
-using Microsoft.AspNetCore.Authorization;
+using MSPR_bloc_4_orders.Services;
 
 namespace MSPR_bloc_4_orders.Controllers
 {
@@ -12,6 +13,7 @@ namespace MSPR_bloc_4_orders.Controllers
     public class CommandesController : ControllerBase
     {
         private readonly OrdersDbContext _context;
+        private readonly IRabbitMqPublisher _rabbitMqPublisher;
 
         public CommandesController(OrdersDbContext context)
         {
