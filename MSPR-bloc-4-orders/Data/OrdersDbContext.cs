@@ -29,7 +29,7 @@ public partial class OrdersDbContext : DbContext
             entity.ToTable("commandes");
 
             entity.Property(e => e.IdCommande)
-                .ValueGeneratedNever()
+                .ValueGeneratedOnAdd()
                 .HasColumnName("id_commande");
             entity.Property(e => e.Createdate)
                 .HasColumnType("datetime")
